@@ -1,0 +1,21 @@
+locations:
+  - name: 上海
+    lat: 31.2304
+    lng: 121.4737
+    description: 中国沪爷中心
+    image: image/2.jpg
+    details: 上海是沪爷使用沪币的地方。
+
+  - name: 北京
+    lat: 39.9042
+    lng: 116.4074
+    description: 皇帝之都
+    image: image/1.jpg
+    details: 习近平等腐败大官僚所在地。
+
+  - name: 成都
+    lat: 30.5728
+    lng: 104.0668
+    description: 基佬之都
+    image: image/3.jpg
+    details: 成都是最多基佬男同的地方。
