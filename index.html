@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>YAML 多图层地图</title>
+  <title>开源定义地图</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
   <style>
@@ -69,11 +69,11 @@
     attribution: '&copy; Google'
   });
 
-  // 初始化地图
+  // 初始化地图，默认使用 Topographic 图层
   const map = L.map('map', {
     center: [30, 110],
     zoom: 5,
-    layers: [osm]
+    layers: [topo]  // 默认使用 Topographic 图层
   });
 
   // 图层切换控件
