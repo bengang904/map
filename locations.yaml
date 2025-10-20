@@ -2,8 +2,9 @@ locations:
   - name: 启皓艺术馆
     lat: 39.95
     lng: 116.46
-    description: (北京市朝阳区新源南路8号院1号楼)
+    description: 【北京市朝阳区新源南路8号院1号楼】
     image: images/116.46,39.95.jpg
     details: 不对外开放的私人藏品室
+
 
 
