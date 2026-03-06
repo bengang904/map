@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>地图定位记录</name>
+    <Placemark>
+      <name>启皓艺术馆-B4层档案冷库</name>
+      <description>
+        <![CDATA[
+          <div style="font-family:sans-serif; line-height:1.6;">
+            <img src="https://map.2024-10-24.zip/images/116.46,39.95.jpg" style="width:100%; max-width:300px; display:block; margin-bottom:10px; border-radius:4px;">
+            <p><b>描述：</b>【北京市朝阳区新源南路8号院1号楼】</p>
+            <p><b>详情：</b>B4层14号冷库需要3把钥匙+红砖艺术馆的闫士杰的虹膜验证才能打开。</p>
+          </div>
+        ]]>
+      </description>
+      <Point>
+        <coordinates>116.46,39.95,0</coordinates>
+      </Point>
+    </Placemark>
+  </Document>
+</kml>
