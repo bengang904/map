@@ -3,15 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="preconnect" href="https://unpkg.com">
-  <link rel="preconnect" href="https://{s}.tile.openstreetmap.org">
   <link rel='shortcut icon' href='https://2024-10-24.zip/images/map.png'>
   <link rel='icon' href='https://2024-10-24.zip/images/map.png'>
   <link rel='apple-touch-icon-precomposed' href='https://2024-10-24.zip/images/map.png'>
   <meta name='msapplication-TileImage' content='https://2024-10-24.zip/images/map.png'>
   <title>地图定位记录</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+  <link rel="stylesheet" href="css/leaflet.css" />
+  <link rel="stylesheet" href="css/Control.Geocoder.css" />
   <style>
     body { background-color: #1a1a24; color: #ffffff; font-family: "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
     #map { height: 100vh; width: 100%; background: #1a1a24; }
@@ -19,47 +17,64 @@
     .leaflet-popup-content-wrapper {
       background: #1e1e2a;
       color: #fff;
-      border-radius: 0; 
+      border-radius: 0;
       padding: 0;
       box-shadow: 0 12px 24px rgba(0,0,0,0.5);
       border: 1px solid #333345;
     }
     .leaflet-popup-content {
-      margin: 0;
-      width: 240px !important;
+      margin: 0 !important;
+      width: 260px !important;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     .leaflet-popup-tip {
       background: #1e1e2a;
       border: 1px solid #333345;
     }
     .popup-inner {
-      padding: 16px;
+      padding: 20px;
+      width: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
     }
     .popup-inner img {
       width: 100%;
-      height: 120px;
+      height: 130px;
       object-fit: cover;
       border-radius: 0;
-      margin-bottom: 12px;
+      margin-bottom: 15px;
       border: 1px solid rgba(255,255,255,0.1);
+      display: block;
     }
     .popup-inner h3 {
-      margin: 0 0 8px 0;
+      margin: 0 0 10px 0;
       font-size: 16px;
       font-weight: bold;
       color: #58a6ff;
       border-bottom: 1px solid #333345;
-      padding-bottom: 8px;
+      padding-bottom: 10px;
+      width: 100%;
+      line-height: 1.4;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      display: block;
     }
     .popup-inner p {
-      margin: 6px 0;
-      font-size: 12px;
+      margin: 5px 0;
+      font-size: 13px;
       line-height: 1.6;
       color: #adb5bd;
+      width: 100%;
+      overflow-wrap: break-word;
     }
     .leaflet-container a.leaflet-popup-close-button {
-      color: #666;
-      padding: 8px 8px 0 0;
+      color: #888;
+      padding: 10px 10px 0 0;
     }
   </style>
 </head>
@@ -69,11 +84,15 @@
 <script src="js/Control.Geocoder.js"></script>
 <script src="js/L.KML.js"></script>
 <script>
+  delete L.Icon.Default.prototype._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'css/images/marker-icon-2x.png',
+    iconUrl: 'css/images/marker-icon.png',
+    shadowUrl: 'css/images/marker-shadow.png',
+  });
+
   const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OSM contributors'
-  });
-  const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenTopoMap'
   });
 
   const map = L.map('map', {
@@ -83,7 +102,6 @@
     preferCanvas: true
   });
 
-  L.control.layers({"Street": osm, "Topographic": topo}).addTo(map);
   L.Control.geocoder().addTo(map);
 
   const urlParams = new URLSearchParams(window.location.search);
@@ -96,16 +114,29 @@
         const parser = new DOMParser();
         const kml = parser.parseFromString(kmlText, "text/xml");
         const placemarks = kml.getElementsByTagName("Placemark");
+        
         for (let p of placemarks) {
-            let desc = p.getElementsByTagName("description")[0];
-            let name = p.getElementsByTagName("name")[0];
-            if (desc && name) {
-                let originalDesc = desc.textContent;
-                let title = name.textContent;
-                desc.textContent = `<div class="popup-inner"><h3>${title}</h3>${originalDesc}</div>`;
+            let descNode = p.getElementsByTagName("description")[0];
+            let nameNode = p.getElementsByTagName("name")[0];
+            if (descNode) {
+                let title = nameNode ? nameNode.textContent : "地点详情";
+                let rawContent = descNode.textContent;
+                
+                let tempDiv = document.createElement('div');
+                tempDiv.innerHTML = rawContent;
+                let cleanContent = tempDiv.innerHTML;
+                
+                descNode.textContent = `<div class="popup-inner"><h3>${title}</h3>${cleanContent}</div>`;
             }
         }
+
         const track = new L.KML(kml);
+        track.eachLayer(layer => {
+            if (layer instanceof L.Marker) {
+                layer.setIcon(new L.Icon.Default());
+            }
+        });
+
         map.addLayer(track);
         const bounds = track.getBounds();
         if (bounds.isValid()) map.fitBounds(bounds);
