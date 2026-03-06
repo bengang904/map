@@ -3,118 +3,115 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="preconnect" href="https://{s}.tile.openstreetmap.org">
   <link rel='shortcut icon' href='https://2024-10-24.zip/images/map.png'>
-    <link rel='icon' href='https://2024-10-24.zip/images/map.png'>
-    <link rel='apple-touch-icon-precomposed' href='https://2024-10-24.zip/images/map.png'>
-    <meta name='msapplication-TileImage' content='https://2024-10-24.zip/images/map.png'>
+  <link rel='icon' href='https://2024-10-24.zip/images/map.png'>
+  <link rel='apple-touch-icon-precomposed' href='https://2024-10-24.zip/images/map.png'>
+  <meta name='msapplication-TileImage' content='https://2024-10-24.zip/images/map.png'>
   <title>地图定位记录</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
   <style>
-    body {
-      background-color: #22212d;
-      color: #ffffff;
-      font-family: Arial, sans-serif;
-      margin: 0;
+    body { background-color: #1a1a24; color: #ffffff; font-family: "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
+    #map { height: 100vh; width: 100%; background: #1a1a24; }
+    
+    .leaflet-popup-content-wrapper {
+      background: #1e1e2a;
+      color: #fff;
+      border-radius: 0; /* 改为直角 */
       padding: 0;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.5);
+      border: 1px solid #333345;
     }
-
-    #map {
-      height: 100vh;
+    .leaflet-popup-content {
+      margin: 0;
+      width: 240px !important;
+    }
+    .leaflet-popup-tip {
+      background: #1e1e2a;
+      border: 1px solid #333345;
+    }
+    .popup-inner {
+      padding: 16px; /* 增加内边距 */
+    }
+    .popup-inner img {
       width: 100%;
-    }
-
-    .popup-content {
-      max-width: 250px;
-    }
-
-    .popup-content .img-container {
-      position: relative;
-      width: 100%;
-      padding-bottom: 50%; /* 2:1 宽高比 */
-      overflow: hidden;
-      border-radius: 8px;
-      margin-bottom: 8px;
-    }
-
-    .popup-content img {
-      position: absolute;
-      width: 100%;
-      height: 100%;
+      height: 120px;
       object-fit: cover;
+      border-radius: 0; /* 图片也改为直角 */
+      margin-bottom: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
     }
-
-    .popup-content p {
-      margin: 4px 0;
+    .popup-inner h3 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+      font-weight: bold;
+      color: #58a6ff;
+      border-bottom: 1px solid #333345;
+      padding-bottom: 8px;
+    }
+    .popup-inner p {
+      margin: 6px 0;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #adb5bd;
+    }
+    .leaflet-container a.leaflet-popup-close-button {
+      color: #666;
+      padding: 8px 8px 0 0;
     }
   </style>
 </head>
 <body>
-
 <div id="map"></div>
-
-<script src="js/leaflet.js"></script>
-<script src="js/Control.Geocoder.js"></script>
-<script src="js/js-yaml.min.js"></script>
-
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<script src="https://unpkg.com/leaflet-kml/L.KML.js"></script>
 <script>
-  // 定义多个底图图层
   const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
+    attribution: '&copy; OSM contributors'
   });
-
   const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-    attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap'
+    attribution: '&copy; OpenTopoMap'
   });
 
-  const satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-    maxZoom: 20,
-    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-    attribution: '&copy; Google'
-  });
-
-  // 初始化地图，默认使用 Topographic 图层
   const map = L.map('map', {
-    center: [30, 110],
-    zoom: 5,
-    layers: [topo]  // 默认使用 Topographic 图层
+    center: [39.95, 116.46],
+    zoom: 12,
+    layers: [osm],
+    preferCanvas: true
   });
 
-  // 图层切换控件
-  const baseLayers = {
-    "OpenStreetMap": osm,
-    "Topographic": topo,
-    "Satellite": satellite
-  };
-  L.control.layers(baseLayers).addTo(map);
-
-  // 搜索控件
+  L.control.layers({"Street": osm, "Topographic": topo}).addTo(map);
   L.Control.geocoder().addTo(map);
 
-  // 加载 YAML 数据
-  fetch('locations.yaml')
-    .then(response => response.text())
-    .then(yamlText => {
-      const data = jsyaml.load(yamlText);
-      data.locations.forEach(loc => {
-        const popupHtml = `
-          <div class="popup-content">
-            <div class="img-container">
-              <img src="${loc.image}" alt="${loc.name}">
-            </div>
-            <strong>${loc.name}</strong>
-            <p>${loc.description}</p>
-            <p>${loc.details}</p>
-          </div>
-        `;
-        L.marker([loc.lat, loc.lng])
-          .addTo(map)
-          .bindPopup(popupHtml);
-      });
-    })
-    .catch(err => console.error("加载 YAML 失败:", err));
-</script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const kmlFile = urlParams.get('file');
 
+  if (kmlFile) {
+    fetch(kmlFile, { cache: "force-cache" })
+      .then(res => res.ok ? res.text() : Promise.reject())
+      .then(kmlText => {
+        const parser = new DOMParser();
+        const kml = parser.parseFromString(kmlText, "text/xml");
+        const placemarks = kml.getElementsByTagName("Placemark");
+        for (let p of placemarks) {
+            let desc = p.getElementsByTagName("description")[0];
+            let name = p.getElementsByTagName("name")[0];
+            if (desc && name) {
+                let originalDesc = desc.textContent;
+                let title = name.textContent;
+                desc.textContent = `<div class="popup-inner"><h3>${title}</h3>${originalDesc}</div>`;
+            }
+        }
+        const track = new L.KML(kml);
+        map.addLayer(track);
+        const bounds = track.getBounds();
+        if (bounds.isValid()) map.fitBounds(bounds);
+      })
+      .catch(err => console.error(err));
+  }
+</script>
 </body>
 </html>
-
