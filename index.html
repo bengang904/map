@@ -1,148 +1,89 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel='shortcut icon' href='https://2024-10-24.zip/images/map.png'>
-  <link rel='icon' href='https://2024-10-24.zip/images/map.png'>
-  <link rel='apple-touch-icon-precomposed' href='https://2024-10-24.zip/images/map.png'>
-  <meta name='msapplication-TileImage' content='https://2024-10-24.zip/images/map.png'>
-  <title>地图定位记录</title>
-  <link rel="stylesheet" href="css/leaflet.css" />
-  <link rel="stylesheet" href="css/Control.Geocoder.css" />
-  <style>
-    body { background-color: #1a1a24; color: #ffffff; font-family: "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
-    #map { height: 100vh; width: 100%; background: #1a1a24; }
-    
-    .leaflet-popup-content-wrapper {
-      background: #1e1e2a;
-      color: #fff;
-      border-radius: 0;
-      padding: 0;
-      box-shadow: 0 12px 24px rgba(0,0,0,0.5);
-      border: 1px solid #333345;
-    }
-    .leaflet-popup-content {
-      margin: 0 !important;
-      width: 260px !important;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .leaflet-popup-tip {
-      background: #1e1e2a;
-      border: 1px solid #333345;
-    }
-    .popup-inner {
-      padding: 20px;
-      width: 100%;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-    .popup-inner img {
-      width: 100%;
-      height: 130px;
-      object-fit: cover;
-      border-radius: 0;
-      margin-bottom: 15px;
-      border: 1px solid rgba(255,255,255,0.1);
-      display: block;
-    }
-    .popup-inner h3 {
-      margin: 0 0 10px 0;
-      font-size: 16px;
-      font-weight: bold;
-      color: #58a6ff;
-      border-bottom: 1px solid #333345;
-      padding-bottom: 10px;
-      width: 100%;
-      line-height: 1.4;
-      overflow-wrap: break-word;
-      word-wrap: break-word;
-      display: block;
-    }
-    .popup-inner p {
-      margin: 5px 0;
-      font-size: 13px;
-      line-height: 1.6;
-      color: #adb5bd;
-      width: 100%;
-      overflow-wrap: break-word;
-    }
-    .leaflet-container a.leaflet-popup-close-button {
-      color: #888;
-      padding: 10px 10px 0 0;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>地图</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { height: 100vh; width: 100vw; }
+        #stats {
+            position: absolute;
+            top: 10px;
+            left: 50px;
+            z-index: 1000;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            font-family: sans-serif;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
-<div id="map"></div>
-<script src="js/leaflet.js"></script>
-<script src="js/Control.Geocoder.js"></script>
-<script src="js/L.KML.js"></script>
-<script>
-  delete L.Icon.Default.prototype._getIconUrl;
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'css/images/marker-icon-2x.png',
-    iconUrl: 'css/images/marker-icon.png',
-    shadowUrl: 'css/images/marker-shadow.png',
-  });
 
-  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OSM contributors'
-  });
+    <div id="stats">正在加载...</div>
+    <div id="map"></div>
 
-  const map = L.map('map', {
-    center: [39.95, 116.46],
-    zoom: 12,
-    layers: [osm],
-    preferCanvas: true
-  });
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([20, 0], 2);
+        const statsDiv = document.getElementById('stats');
+        let invalidCount = 0;
 
-  L.Control.geocoder().addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const kmlFile = urlParams.get('file');
+        const params = new URLSearchParams(window.location.search);
+        const jsonUrl = params.get('url') || 'points.json';
 
-  if (kmlFile) {
-    fetch(kmlFile, { cache: "force-cache" })
-      .then(res => res.ok ? res.text() : Promise.reject())
-      .then(kmlText => {
-        const parser = new DOMParser();
-        const kml = parser.parseFromString(kmlText, "text/xml");
-        const placemarks = kml.getElementsByTagName("Placemark");
-        
-        for (let p of placemarks) {
-            let descNode = p.getElementsByTagName("description")[0];
-            let nameNode = p.getElementsByTagName("name")[0];
-            if (descNode) {
-                let title = nameNode ? nameNode.textContent : "地点详情";
-                let rawContent = descNode.textContent;
-                
-                let tempDiv = document.createElement('div');
-                tempDiv.innerHTML = rawContent;
-                let cleanContent = tempDiv.innerHTML;
-                
-                descNode.textContent = `<div class="popup-inner"><h3>${title}</h3>${cleanContent}</div>`;
-            }
-        }
+        fetch(jsonUrl)
+            .then(response => {
+                if (!response.ok) throw new Error('网络响应异常');
+                return response.json();
+            })
+            .then(data => {
+                const markers = [];
+                const radius = 0.01;
 
-        const track = new L.KML(kml);
-        track.eachLayer(layer => {
-            if (layer instanceof L.Marker) {
-                layer.setIcon(new L.Icon.Default());
-            }
-        });
+                data.forEach(item => {
+                    if (item.coords && Array.isArray(item.coords)) {
+                        const randomOffsetLat = (Math.random() * 2 - 1) * radius;
+                        const randomOffsetLng = (Math.random() * 2 - 1) * radius;
 
-        map.addLayer(track);
-        const bounds = track.getBounds();
-        if (bounds.isValid()) map.fitBounds(bounds);
-      })
-      .catch(err => console.error(err));
-  }
-</script>
+                        const adjustedCoords = [
+                            item.coords[0] + randomOffsetLat,
+                            item.coords[1] + randomOffsetLng
+                        ];
+
+                        const marker = L.marker(adjustedCoords).addTo(map);
+                        marker.bindPopup(`
+                            <b>${item.track}</b><br>
+                            人名: ${item.artists.join(', ')}<br>
+                            地点: ${item.location}
+                        `);
+                        
+                        markers.push(marker);
+                    } else {
+                        invalidCount++;
+                    }
+                });
+
+                statsDiv.innerText = `无效数据: ${invalidCount}`;
+
+                if (markers.length > 0) {
+                    const group = L.featureGroup(markers);
+                    map.fitBounds(group.getBounds().pad(0.1));
+                } else {
+                    statsDiv.innerText = '无有效数据点';
+                }
+            })
+            .catch(error => {
+                console.error('加载 JSON 失败:', error);
+                statsDiv.innerText = '加载失败: 请检查 URL 参数';
+            });
+    </script>
 </body>
 </html>
