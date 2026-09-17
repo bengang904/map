@@ -3,25 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>道路导航</title>
+<title>中国道路导航</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box}html,body,#map{width:100%;height:100%;margin:0;overflow:hidden}body{font-family:Arial,"Microsoft YaHei",sans-serif}#map{position:fixed;inset:0}.leaflet-control-attribution{display:none}
-#panel{position:fixed;z-index:10000;top:15px;left:15px;width:350px;background:#fff;box-shadow:0 2px 15px #0004;transition:transform .25s}
+#panel{position:fixed;z-index:2147483647;top:15px;left:15px;width:350px;background:#fff;box-shadow:0 2px 15px #0004;transition:transform .25s}
 #head{padding:13px 15px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ddd}
 #title{font-size:16px;font-weight:bold}#arrow{width:20px;height:20px;transition:transform .25s}#panel.closed #arrow{transform:rotate(180deg)}
 #body{padding:13px 15px}.info{font-size:12px;color:#555;line-height:1.7}
 .buttons{display:flex;margin-top:9px;border-top:1px solid #ddd}.buttons button{flex:1;height:38px;border:0;border-right:1px solid #ddd;background:#fff;font-size:12px}.buttons button:last-child{border:0}
 #result{padding:11px 15px;border-top:1px solid #ddd;font-size:13px;line-height:1.6}.routeTop{display:flex;align-items:center;gap:8px}.routeIcon{width:23px;height:23px}.routeMain{font-size:16px;font-weight:bold}
 #steps{max-height:360px;overflow:auto;border-top:1px solid #ddd}.step{display:flex;gap:9px;padding:10px 15px;border-bottom:1px solid #eee;font-size:12px}.step svg{width:22px;height:22px;flex:none}.step b{font-size:12px}
+#tools{position:fixed;z-index:1000;right:12px;top:12px;display:flex;flex-direction:column;box-shadow:0 2px 8px #0004}
+.tools{width:40px;height:40px;border:0;border-bottom:1px solid #ddd;background:#fff;font-size:20px}.tools:last-child{border:0}
 .marker{background:transparent;border:0}.marker svg{width:38px;height:48px}
 #mobileToggle{display:none}
 @media(min-width:701px){#panel.closed{transform:translateX(calc(-100% + 50px))}#panel.closed #body,#panel.closed #result,#panel.closed #steps{display:none}#head{height:48px}}
-@media(max-width:700px){#panel{top:auto;right:0;bottom:0;left:0;width:100%;box-shadow:0 -2px 14px #0004;transform:none}#head{height:52px;padding:8px 15px}.handle{position:absolute;top:5px;left:50%;width:38px;height:4px;background:#aaa;transform:translateX(-50%)}#body{display:none}#panel.open #body{display:block}#panel.open{transform:translateY(0)}#panel.closed{transform:translateY(calc(100% - 52px))}#result{max-height:170px;overflow:auto}#steps{max-height:55vh}#mobileToggle{display:flex;align-items:center;justify-content:center;position:absolute;right:10px;top:9px;width:40px;height:34px;padding:0;border:0;background:#1976d2}#mobileToggle svg{width:22px;height:22px;transition:transform .25s}#panel.closed #mobileToggle svg{transform:rotate(180deg)}}
+@media(max-width:700px){#panel{top:auto;right:0;bottom:0;left:0;width:100%;box-shadow:0 -2px 14px #0004;transform:none}#head{height:52px;padding:8px 15px}.handle{position:absolute;top:5px;left:50%;width:38px;height:4px;background:#aaa;transform:translateX(-50%)}#body{display:none}#panel.open #body{display:block}#panel.open{transform:translateY(0)}#panel.closed{transform:translateY(calc(100% - 52px))}#result{max-height:170px;overflow:auto}#steps{max-height:55vh}#mobileToggle{display:flex;align-items:center;justify-content:center;position:absolute;right:10px;top:9px;width:40px;height:34px;padding:0;border:0;background:#1976d2}#mobileToggle svg{width:22px;height:22px;transition:transform .25s}#panel.closed #mobileToggle svg{transform:rotate(180deg)}#tools{top:12px;right:10px}}
 </style>
 </head>
 <body>
 <div id="map"></div>
+<div id="tools"><button class="tools" onclick="map.zoomIn()">+</button><button class="tools" onclick="map.zoomOut()">−</button></div>
 <div id="panel" class="open">
 <div id="head" onclick="togglePanel()">
 <div><span class="handle"></span><span id="title">道路导航</span></div>
@@ -37,25 +40,24 @@
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const map=L.map("map",{center:[39.9087,116.3975],zoom:12,zoomControl:true});
-L.control.zoom({position:"topright"}).addTo(map);
+const map=L.map("map",{center:[39.9087,116.3975],zoom:12,zoomControl:false,crs:L.CRS.EPSG3395});
 L.tileLayer("https://core-renderer-tiles.maps.yandex.net/tiles?l=map&x={x}&y={y}&z={z}&scale=1&lang=zh_CN",{maxZoom:19}).addTo(map);
 let start=null,end=null,sm=null,em=null,route=null,snappedStart=null,snappedEnd=null;
 const $=id=>document.getElementById(id);
-function icon(t){const c=t==="start"?"#16803c":"#d52b1e";return L.divIcon({className:"marker",html:`<svg viewBox="0 0 38 48"><path d="M19 1C9 1 2 8 2 17c0 12 17 30 17 30s17-18 17-30C36 8 29 1 19 1z" fill="${c}"/><circle cx="19" cy="17" r="8" fill="#fff"/><circle cx="19" cy="17" r="3.5" fill="${c}"/></svg>`,iconSize:[38,48],iconAnchor:[19,47]})}
-function setPoint(p,t){if(t==="start"){start=[p.lat,p.lng];if(sm)map.removeLayer(sm);sm=L.marker(start,{icon:icon("start")}).addTo(map)}else{end=[p.lat,p.lng];if(em)map.removeLayer(em);em=L.marker(end,{icon:icon("end")}).addTo(map)}update()}
+function icon(type){let c=type==="start"?"#16803c":"#d52b1e";return L.divIcon({className:"marker",html:`<svg viewBox="0 0 38 48"><path d="M19 1C9 1 2 8 2 17c0 12 17 30 17 30s17-18 17-30C36 8 29 1 19 1z" fill="${c}"/><circle cx="19" cy="17" r="8" fill="#fff"/><circle cx="19" cy="17" r="3.5" fill="${c}"/></svg>`,iconSize:[38,48],iconAnchor:[19,47]})}
+function setPoint(p,type){if(type==="start"){start=[p.lat,p.lng];if(sm)map.removeLayer(sm);sm=L.marker(start,{icon:icon("start")}).addTo(map)}else{end=[p.lat,p.lng];if(em)map.removeLayer(em);em=L.marker(end,{icon:icon("end")}).addTo(map)}update()}
 map.on("click",e=>{if(!start)setPoint(e.latlng,"start");else if(!end){setPoint(e.latlng,"end");navigate()}});
 function update(){$("status").innerHTML=`起点：${start?start[1].toFixed(5)+","+start[0].toFixed(5):"未选择"}<br>目的地：${end?end[1].toFixed(5)+","+end[0].toFixed(5):"未选择"}`}
-async function nearest(p){const u=`https://router.project-osrm.org/nearest/v1/driving/${p[1]},${p[0]}?number=1`,r=await fetch(u);if(!r.ok)throw Error("道路匹配失败");const d=await r.json(),w=d.waypoints?.[0];if(d.code!=="Ok"||!w)throw Error("附近没有可用道路");return{point:[w.location[1],w.location[0]],distance:Number(w.distance)||0}}
-async function navigate(){if(!start||!end){$("result").textContent="请先选择起点和目的地";return}$("result").textContent="正在计算道路路线...";try{[snappedStart,snappedEnd]=await Promise.all([nearest(start),nearest(end)]);if(sm)sm.setLatLng(snappedStart.point);if(em)em.setLatLng(snappedEnd.point);const u=`https://router.project-osrm.org/route/v1/driving/${snappedStart.point[1]},${snappedStart.point[0]};${snappedEnd.point[1]},${snappedEnd.point[0]}?overview=full&geometries=geojson&steps=true`,r=await fetch(u);if(!r.ok)throw Error("路线服务器错误");const d=await r.json();if(d.code!=="Ok"||!d.routes?.length)throw Error("没有找到道路路线");draw(d.routes[0])}catch(e){console.error(e);$("result").innerHTML="道路导航失败：<br>"+esc(e.message)}}
-function draw(r){if(route)map.removeLayer(route);route=L.geoJSON(r.geometry,{style:{color:"#1976d2",weight:7,opacity:.9}}).addTo(map);fitRoute();const km=(r.distance/1000).toFixed(2),min=Math.round(r.duration/60);$("result").innerHTML=`<div class="routeTop"><svg class="routeIcon" viewBox="0 0 24 24"><path d="M5 17h14M7 17V9l2-3h6l2 3v8M8 9h8" fill="none" stroke="#1976d2" stroke-width="2"/><circle cx="8" cy="18" r="2" fill="#1976d2"/><circle cx="16" cy="18" r="2" fill="#1976d2"/></svg><span class="routeMain">${km} km</span></div>预计行驶 ${min} 分钟<br>起点道路偏移 ${Math.round(snappedStart.distance)} 米，目的地道路偏移 ${Math.round(snappedEnd.distance)} 米`;steps(r)}
-function steps(r){const box=$("steps");box.innerHTML="";(r.legs||[]).forEach(l=>(l.steps||[]).forEach(s=>{const m=s.maneuver||{},d=document.createElement("div");d.className="step";d.innerHTML=svg(m.modifier)+`<div><b>${instruction(m,s.name)}</b><br>${dist(s.distance)}</div>`;box.appendChild(d)}))}
+async function nearest(p){let u=`https://router.project-osrm.org/nearest/v1/driving/${p[1]},${p[0]}?number=1`;let r=await fetch(u);if(!r.ok)throw Error("道路匹配失败");let d=await r.json();let w=d.waypoints?.[0];if(d.code!=="Ok"||!w)throw Error("附近没有可用道路");return{point:[w.location[1],w.location[0]],distance:Number(w.distance)||0}}
+async function navigate(){if(!start||!end){$("result").textContent="请先选择起点和目的地";return}$("result").textContent="正在计算道路路线...";try{[snappedStart,snappedEnd]=await Promise.all([nearest(start),nearest(end)]);if(sm)sm.setLatLng(snappedStart.point);if(em)em.setLatLng(snappedEnd.point);let u=`https://router.project-osrm.org/route/v1/driving/${snappedStart.point[1]},${snappedStart.point[0]};${snappedEnd.point[1]},${snappedEnd.point[0]}?overview=full&geometries=geojson&steps=true`;let r=await fetch(u);if(!r.ok)throw Error("路线服务器错误");let d=await r.json();if(d.code!=="Ok"||!d.routes?.length)throw Error("没有找到道路路线");draw(d.routes[0])}catch(e){console.error(e);$("result").innerHTML="道路导航失败：<br>"+esc(e.message)}}
+function draw(r){if(route)map.removeLayer(route);route=L.geoJSON(r.geometry,{style:{color:"#1976d2",weight:7,opacity:.9}}).addTo(map);fitRoute();let km=(r.distance/1000).toFixed(2);let min=Math.round(r.duration/60);$("result").innerHTML=`<div class="routeTop"><svg class="routeIcon" viewBox="0 0 24 24"><path d="M5 17h14M7 17V9l2-3h6l2 3v8M8 9h8" fill="none" stroke="#1976d2" stroke-width="2"/><circle cx="8" cy="18" r="2" fill="#1976d2"/><circle cx="16" cy="18" r="2" fill="#1976d2"/></svg><span class="routeMain">${km} km</span></div>预计行驶 ${min} 分钟<br>起点道路偏移 ${Math.round(snappedStart.distance)} 米，目的地道路偏移 ${Math.round(snappedEnd.distance)} 米`;steps(r)}
+function steps(r){let box=$("steps");box.innerHTML="";(r.legs||[]).forEach(l=>(l.steps||[]).forEach(s=>{let m=s.maneuver||{};let d=document.createElement("div");d.className="step";d.innerHTML=svg(m.modifier)+`<div><b>${instruction(m,s.name)}</b><br>${dist(s.distance)}</div>`;box.appendChild(d)}))}
 function instruction(m,n){n=n||"当前道路";if(m.type==="depart")return"出发，进入 "+n;if(m.type==="arrive")return"到达目的地";if(m.modifier==="left")return"左转进入 "+n;if(m.modifier==="right")return"右转进入 "+n;if(m.modifier==="slight left")return"向左前方进入 "+n;if(m.modifier==="slight right")return"向右前方进入 "+n;if(m.type==="roundabout")return"进入环岛";if(m.type==="merge")return"并入 "+n;return"继续沿 "+n+" 行驶"}
 function svg(m){let d="M12 20V4m0 0-5 5m5-5 5 5";if(m==="left")d="M19 18H9a5 5 0 0 1-5-5V7m0 0 4 4M4 7l4 4";if(m==="right")d="M5 18h10a5 5 0 0 0 5-5V7m0 0-4 4m4-4 4 4";return`<svg viewBox="0 0 24 24"><path d="${d}" fill="none" stroke="#1976d2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
 function dist(m){return m<1000?Math.round(m)+" 米":(m/1000).toFixed(1)+" 公里"}
-function fitRoute(){if(!route)return;const b=route.getBounds();if(b.isValid())map.fitBounds(b,{paddingTopLeft:[25,80],paddingBottomRight:[25,180]})}
+function fitRoute(){if(!route)return;let b=route.getBounds();if(b.isValid())map.fitBounds(b,{paddingTopLeft:[25,80],paddingBottomRight:[25,180]})}
 function resetAll(){[start,end,snappedStart,snappedEnd]=[null,null,null,null];if(sm)map.removeLayer(sm);if(em)map.removeLayer(em);if(route)map.removeLayer(route);[sm,em,route]=[null,null,null];$("result").textContent="等待选择起点和目的地";$("steps").innerHTML="";update()}
-function togglePanel(){const p=$("panel");p.classList.toggle("closed");p.classList.toggle("open")}
+function togglePanel(){let p=$("panel");if(p.classList.contains("closed")){p.classList.remove("closed");p.classList.add("open")}else{p.classList.remove("open");p.classList.add("closed")}}
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 </script>
 </body>
