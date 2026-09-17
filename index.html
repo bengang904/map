@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>China-Map</title>
+<title>China Map</title>
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
 <style>
@@ -67,8 +68,8 @@ body{
 
 .point input{
     width:100%;
-    height:40px;
     min-width:0;
+    height:40px;
     padding:0 10px;
     border:1px solid #ccc;
     outline:none;
@@ -87,6 +88,7 @@ body{
     background:#1976d2;
     color:#fff;
     font-size:15px;
+    cursor:pointer;
 }
 
 #routeButton:active{
@@ -161,6 +163,17 @@ body{
     font-size:12px;
 }
 
+.marker-icon{
+    background:transparent;
+    border:0;
+}
+
+.marker-icon svg{
+    display:block;
+    width:38px;
+    height:48px;
+}
+
 .map-controls{
     position:absolute;
     z-index:900;
@@ -177,6 +190,7 @@ body{
     justify-content:center;
     width:42px;
     height:42px;
+    padding:0;
     border:0;
     border-bottom:1px solid #ddd;
     background:#fff;
@@ -311,6 +325,7 @@ body{
         justify-content:center;
         width:44px;
         height:44px;
+        padding:0;
         border:0;
         background:#1976d2;
         pointer-events:auto;
@@ -325,34 +340,6 @@ body{
         top:275px;
         right:10px;
     }
-
-    .map-control{
-        width:42px;
-        height:42px;
-    }
-}
-
-@media(max-width:700px) and (orientation:landscape){
-
-    #inputs{
-        width:390px;
-        max-height:185px;
-        right:auto;
-    }
-
-    #result{
-        width:390px;
-        right:auto;
-    }
-
-    #steps{
-        max-height:75vh;
-    }
-
-    .mobile-route-bar{
-        width:390px;
-        right:auto;
-    }
 }
 </style>
 </head>
@@ -363,7 +350,7 @@ body{
 
 <div class="map-controls">
 
-    <button class="map-control" id="zoomIn" aria-label="放大">
+    <button class="map-control" id="zoomIn">
         <svg viewBox="0 0 24 24">
             <path
                 d="M12 5v14M5 12h14"
@@ -374,7 +361,7 @@ body{
         </svg>
     </button>
 
-    <button class="map-control" id="zoomOut" aria-label="缩小">
+    <button class="map-control" id="zoomOut">
         <svg viewBox="0 0 24 24">
             <path
                 d="M5 12h14"
@@ -385,7 +372,7 @@ body{
         </svg>
     </button>
 
-    <button class="map-control" id="locateRoute" aria-label="显示完整路线">
+    <button class="map-control" id="fitRoute">
         <svg viewBox="0 0 24 24">
             <path
                 d="M4 4h6M4 4v6M20 4h-6M20 4v6M4 20h6M4 20v-6M20 20h-6M20 20v-6"
@@ -404,7 +391,7 @@ body{
     <div id="inputs">
 
         <div class="title">
-            北京复杂道路导航
+            中国道路导航
         </div>
 
         <div class="point">
@@ -480,7 +467,7 @@ body{
     </div>
 
     <div id="result">
-        正在准备道路导航
+        正在计算道路导航
     </div>
 
     <div id="steps"></div>
@@ -513,22 +500,31 @@ body{
 
 document.addEventListener("DOMContentLoaded",function(){
 
+    /*
+     * Yandex 使用 WGS84 椭球墨卡托。
+     * Leaflet 的 EPSG:3395 正好对应 WGS84 / World Mercator。
+     */
     var map=L.map("map",{
+        crs:L.CRS.EPSG3395,
         center:[39.9087,116.3975],
         zoom:13,
-        zoomControl:false
+        zoomControl:false,
+        attributionControl:false
     });
 
+    /*
+     * Yandex 旧版瓦片接口。
+     */
     L.tileLayer(
         "https://core-renderer-tiles.maps.yandex.net/tiles?l=map&x={x}&y={y}&z={z}&scale=1&lang=zh_CN",
         {
-            maxZoom:19,
             tileSize:256,
-            attribution:""
+            maxZoom:19,
+            noWrap:true
         }
     ).addTo(map);
 
-    var routePoints=[
+    var points=[
         [39.9087,116.3975],
         [39.9250,116.3967],
         [39.9470,116.3907],
@@ -540,23 +536,10 @@ document.addEventListener("DOMContentLoaded",function(){
     var markers=[];
     var routeLayer=null;
 
-    function clearMarkers(){
-
-        for(
-            var i=0;
-            i<markers.length;
-            i++
-        ){
-
-            map.removeLayer(
-                markers[i]
-            );
-        }
-
-        markers=[];
-    }
-
-    function markerIcon(type,number){
+    function createMarkerIcon(
+        type,
+        number
+    ){
 
         var color;
 
@@ -570,14 +553,16 @@ document.addEventListener("DOMContentLoaded",function(){
             color="#1976d2";
         }
 
-        var text="";
-
-        if(type==="waypoint"){
-            text=
-                '<text x="19" y="21" text-anchor="middle" fill="#1976d2" font-size="10" font-weight="bold">'+
-                number+
-                '</text>';
-        }
+        var content=
+            type==="waypoint"
+            ?
+            '<text x="19" y="21" text-anchor="middle" fill="#1976d2" font-size="10" font-weight="bold">'+
+            number+
+            '</text>'
+            :
+            '<circle cx="19" cy="17" r="3" fill="'+
+            color+
+            '"/>';
 
         return L.divIcon({
             className:"marker-icon",
@@ -587,11 +572,7 @@ document.addEventListener("DOMContentLoaded",function(){
                 color+
                 '"/>'+
                 '<circle cx="19" cy="17" r="8" fill="#fff"/>'+
-                (
-                    type==="waypoint"
-                    ? text
-                    : '<circle cx="19" cy="17" r="3" fill="'+color+'"/>'
-                )+
+                content+
                 '</svg>',
             iconSize:[38,48],
             iconAnchor:[19,47]
@@ -600,21 +581,32 @@ document.addEventListener("DOMContentLoaded",function(){
 
     function updateMarkers(){
 
-        clearMarkers();
-
         for(
             var i=0;
-            i<routePoints.length;
+            i<markers.length;
             i++
+        ){
+
+            map.removeLayer(
+                markers[i]
+            );
+        }
+
+        markers=[];
+
+        for(
+            var j=0;
+            j<points.length;
+            j++
         ){
 
             var type;
 
-            if(i===0){
+            if(j===0){
                 type="start";
             }
             else if(
-                i===routePoints.length-1
+                j===points.length-1
             ){
                 type="end";
             }
@@ -622,22 +614,16 @@ document.addEventListener("DOMContentLoaded",function(){
                 type="waypoint";
             }
 
-            var marker=L.marker(
-                routePoints[i],
-                {
-                    icon:markerIcon(
-                        type,
-                        i
-                    )
-                }
-            ).addTo(map);
-
-            marker.bindPopup(
-                "坐标："+
-                routePoints[i][1].toFixed(6)+
-                ","+
-                routePoints[i][0].toFixed(6)
-            );
+            var marker=
+                L.marker(
+                    points[j],
+                    {
+                        icon:createMarkerIcon(
+                            type,
+                            j
+                        )
+                    }
+                ).addTo(map);
 
             markers.push(marker);
         }
@@ -647,7 +633,7 @@ document.addEventListener("DOMContentLoaded",function(){
 
         for(
             var i=0;
-            i<routePoints.length;
+            i<points.length;
             i++
         ){
 
@@ -656,17 +642,10 @@ document.addEventListener("DOMContentLoaded",function(){
                     "p"+i
                 );
 
-            if(!input){
-                throw new Error(
-                    "找不到坐标输入框 p"+i
-                );
-            }
-
-            var value=
-                input.value.trim();
-
             var parts=
-                value.split(",");
+                input.value
+                .trim()
+                .split(",");
 
             if(parts.length!==2){
 
@@ -687,11 +666,11 @@ document.addEventListener("DOMContentLoaded",function(){
             ){
 
                 throw new Error(
-                    "第 "+(i+1)+" 个坐标不是有效数字"
+                    "第 "+(i+1)+" 个坐标无效"
                 );
             }
 
-            routePoints[i]=[
+            points[i]=[
                 lat,
                 lon
             ];
@@ -715,36 +694,36 @@ document.addEventListener("DOMContentLoaded",function(){
                 routeLayer=null;
             }
 
+            var coords="";
+
+            for(
+                var i=0;
+                i<points.length;
+                i++
+            ){
+
+                if(i){
+                    coords+=";";
+                }
+
+                /*
+                 * OSRM 使用 WGS84：
+                 * longitude,latitude
+                 */
+                coords+=
+                    points[i][1]+
+                    ","+
+                    points[i][0];
+            }
+
             document.getElementById(
                 "result"
             ).innerHTML=
                 "正在计算道路路线...";
 
-            document.getElementById(
-                "steps"
-            ).innerHTML="";
-
-            var coordinateString="";
-
-            for(
-                var i=0;
-                i<routePoints.length;
-                i++
-            ){
-
-                if(i>0){
-                    coordinateString+=";";
-                }
-
-                coordinateString+=
-                    routePoints[i][1]+
-                    ","+
-                    routePoints[i][0];
-            }
-
             var url=
                 "https://router.project-osrm.org/route/v1/driving/"+
-                coordinateString+
+                coords+
                 "?overview=full"+
                 "&geometries=geojson"+
                 "&steps=true";
@@ -756,7 +735,7 @@ document.addEventListener("DOMContentLoaded",function(){
                 if(!response.ok){
 
                     throw new Error(
-                        "路线服务器 HTTP "+
+                        "OSRM HTTP "+
                         response.status
                     );
                 }
@@ -780,6 +759,17 @@ document.addEventListener("DOMContentLoaded",function(){
                 var route=
                     data.routes[0];
 
+                /*
+                 * 注意：
+                 *
+                 * OSRM 返回 WGS84 经纬度。
+                 *
+                 * 不进行 GCJ02 偏移。
+                 *
+                 * Leaflet EPSG:3395 会把
+                 * WGS84 经纬度正确投影到
+                 * Yandex 的椭球墨卡托。
+                 */
                 routeLayer=
                     L.geoJSON(
                         route.geometry,
@@ -787,43 +777,43 @@ document.addEventListener("DOMContentLoaded",function(){
                             style:{
                                 color:"#1976d2",
                                 weight:7,
-                                opacity:.9
+                                opacity:.92
                             }
                         }
                     ).addTo(map);
 
                 fitRoute();
 
-                var km=
+                var distance=
                     route.distance/1000;
 
-                var totalMinutes=
+                var minutes=
                     Math.round(
                         route.duration/60
                     );
 
                 var hours=
                     Math.floor(
-                        totalMinutes/60
+                        minutes/60
                     );
 
-                var minutes=
-                    totalMinutes%60;
+                var remain=
+                    minutes%60;
 
-                var time;
+                var timeText;
 
-                if(hours>0){
+                if(hours){
 
-                    time=
+                    timeText=
                         hours+
                         " 小时 "+
-                        minutes+
+                        remain+
                         " 分钟";
 
                 }
                 else{
 
-                    time=
+                    timeText=
                         minutes+
                         " 分钟";
                 }
@@ -842,13 +832,13 @@ document.addEventListener("DOMContentLoaded",function(){
                     '</div>'+
                     '<div class="route-info">'+
                     '途经点：'+
-                    (routePoints.length-2)+
+                    (points.length-2)+
                     ' 个<br>'+
                     '总距离：'+
-                    km.toFixed(2)+
+                    distance.toFixed(2)+
                     ' km<br>'+
                     '预计时间：'+
-                    time+
+                    timeText+
                     '</div>';
 
                 showSteps(route);
@@ -857,7 +847,7 @@ document.addEventListener("DOMContentLoaded",function(){
             .catch(function(error){
 
                 console.error(
-                    "ROUTE ERROR:",
+                    "ROUTE ERROR",
                     error
                 );
 
@@ -871,12 +861,10 @@ document.addEventListener("DOMContentLoaded",function(){
         }
         catch(error){
 
-            console.error(error);
-
             document.getElementById(
                 "result"
             ).innerHTML=
-                "输入错误：<br>"+
+                "坐标错误：<br>"+
                 error.message;
         }
     }
@@ -899,8 +887,8 @@ document.addEventListener("DOMContentLoaded",function(){
             map.fitBounds(
                 bounds,
                 {
-                    paddingTopLeft:[30,290],
-                    paddingBottomRight:[30,170]
+                    paddingTopLeft:[25,285],
+                    paddingBottomRight:[25,165]
                 }
             );
 
@@ -910,8 +898,8 @@ document.addEventListener("DOMContentLoaded",function(){
             map.fitBounds(
                 bounds,
                 {
-                    paddingTopLeft:[390,30],
-                    paddingBottomRight:[30,30]
+                    paddingTopLeft:[390,25],
+                    paddingBottomRight:[25,25]
                 }
             );
         }
@@ -937,11 +925,9 @@ document.addEventListener("DOMContentLoaded",function(){
                         var maneuver=
                             step.maneuver||{};
 
-                        var instruction=
-                            instructionText(
-                                maneuver,
-                                step.name
-                            );
+                        var name=
+                            step.name||
+                            "当前道路";
 
                         var div=
                             document.createElement(
@@ -952,7 +938,7 @@ document.addEventListener("DOMContentLoaded",function(){
 
                         div.innerHTML=
                             '<div class="step-icon">'+
-                            stepIcon(
+                            getStepIcon(
                                 maneuver.type,
                                 maneuver.modifier
                             )+
@@ -961,7 +947,10 @@ document.addEventListener("DOMContentLoaded",function(){
                             '<div class="step-name">'+
                             number+
                             ". "+
-                            instruction+
+                            getInstruction(
+                                maneuver,
+                                name
+                            )+
                             '</div>'+
                             '<div class="step-distance">'+
                             formatDistance(
@@ -981,7 +970,7 @@ document.addEventListener("DOMContentLoaded",function(){
         );
     }
 
-    function instructionText(
+    function getInstruction(
         maneuver,
         road
     ){
@@ -991,10 +980,6 @@ document.addEventListener("DOMContentLoaded",function(){
 
         var modifier=
             maneuver.modifier||"";
-
-        road=
-            road||
-            "当前道路";
 
         if(type==="depart"){
             return "从起点出发，进入 "+road;
@@ -1043,6 +1028,7 @@ document.addEventListener("DOMContentLoaded",function(){
         ){
 
             if(maneuver.exit){
+
                 return "进入环岛，在第 "+
                     maneuver.exit+
                     " 个出口驶出";
@@ -1054,7 +1040,7 @@ document.addEventListener("DOMContentLoaded",function(){
         return "继续沿 "+road+" 行驶";
     }
 
-    function stepIcon(
+    function getStepIcon(
         type,
         modifier
     ){
@@ -1062,31 +1048,33 @@ document.addEventListener("DOMContentLoaded",function(){
         var d;
 
         if(type==="depart"){
-            d="M12 20V4m0 0-6 6m6-6 6 6";
+
+            d=
+                "M12 20V4m0 0-6 6m6-6 6 6";
         }
-        else if(
-            type==="arrive"
-        ){
-            d="M12 4v16m0 0-6-6m6 6 6-6";
+
+        else if(type==="arrive"){
+
+            d=
+                "M12 4v16m0 0-6-6m6 6 6-6";
         }
-        else if(
-            modifier==="left"
-        ){
-            d="M19 18H9a5 5 0 0 1-5-5V7m0 0 4 4M4 7l-4 4";
+
+        else if(modifier==="left"){
+
+            d=
+                "M19 18H9a5 5 0 0 1-5-5V7m0 0 4 4M4 7l-4 4";
         }
-        else if(
-            modifier==="right"
-        ){
-            d="M5 18h10a5 5 0 0 0 5-5V7m0 0-4 4m4-4 4 4";
+
+        else if(modifier==="right"){
+
+            d=
+                "M5 18h10a5 5 0 0 0 5-5V7m0 0-4 4m4-4 4 4";
         }
-        else if(
-            type==="roundabout"||
-            type==="rotary"
-        ){
-            d="M18 8a7 7 0 1 0 1 7";
-        }
+
         else{
-            d="M12 20V4m0 0-6 6m6-6 6 6";
+
+            d=
+                "M12 20V4m0 0-6 6m6-6 6 6";
         }
 
         return `
@@ -1104,7 +1092,10 @@ document.addEventListener("DOMContentLoaded",function(){
     function formatDistance(distance){
 
         if(distance<1000){
-            return Math.round(distance)+" 米";
+
+            return Math.round(
+                distance
+            )+" 米";
         }
 
         return (
@@ -1138,12 +1129,10 @@ document.addEventListener("DOMContentLoaded",function(){
         );
 
     document
-        .getElementById("locateRoute")
+        .getElementById("fitRoute")
         .addEventListener(
             "click",
-            function(){
-                fitRoute();
-            }
+            fitRoute
         );
 
     document
@@ -1166,25 +1155,14 @@ document.addEventListener("DOMContentLoaded",function(){
                         "stepToggle"
                     );
 
-                if(
+                button.innerHTML=
                     steps.classList.contains(
                         "open"
                     )
-                ){
-
-                    button.innerHTML=
-                        '<svg viewBox="0 0 24 24">'+
-                        '<path d="M6 15l6-6 6 6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'+
-                        '</svg>';
-
-                }
-                else{
-
-                    button.innerHTML=
-                        '<svg viewBox="0 0 24 24">'+
-                        '<path d="M6 9l6 6 6-6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'+
-                        '</svg>';
-                }
+                    ?
+                    '<svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                    :
+                    '<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
             }
         );
 
