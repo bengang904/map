@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>China Map</title>
+<title>中国道路导航</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
@@ -35,70 +35,78 @@ body{
     z-index:1000;
     top:15px;
     left:15px;
-    width:360px;
-    max-height:calc(100vh - 30px);
+    width:350px;
     background:#fff;
     box-shadow:0 3px 18px rgba(0,0,0,.28);
 }
 
-#inputs{
+#status{
     padding:15px;
-    max-height:430px;
-    overflow:auto;
 }
 
 .title{
-    margin-bottom:13px;
+    margin-bottom:8px;
     font-size:18px;
     font-weight:bold;
 }
 
-.point{
+.description{
+    color:#666;
+    font-size:13px;
+    line-height:1.6;
+}
+
+.point-status{
     display:flex;
     align-items:center;
     gap:8px;
-    margin-bottom:8px;
-}
-
-.point-icon{
-    width:24px;
-    height:24px;
-    flex:none;
-}
-
-.point input{
-    width:100%;
-    min-width:0;
-    height:40px;
-    padding:0 10px;
-    border:1px solid #ccc;
-    outline:none;
-    background:#fff;
+    margin-top:12px;
     font-size:13px;
 }
 
-.point input:focus{
-    border-color:#1976d2;
+.status-dot{
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    background:#aaa;
 }
 
-#routeButton{
-    width:100%;
-    height:44px;
+.status-dot.start{
+    background:#16803c;
+}
+
+.status-dot.end{
+    background:#d52b1e;
+}
+
+.buttons{
+    display:flex;
+    border-top:1px solid #ddd;
+}
+
+.action-button{
+    flex:1;
+    height:42px;
     border:0;
-    background:#1976d2;
-    color:#fff;
-    font-size:15px;
+    border-right:1px solid #ddd;
+    background:#fff;
     cursor:pointer;
+    font-size:13px;
 }
 
-#routeButton:active{
-    background:#125ca5;
+.action-button:last-child{
+    border-right:0;
+}
+
+.action-button:active{
+    background:#eee;
 }
 
 #result{
-    padding:12px 15px;
     border-top:1px solid #ddd;
-    background:#fff;
+    padding:12px 15px;
+    font-size:13px;
+    line-height:1.7;
 }
 
 .route-title{
@@ -117,8 +125,6 @@ body{
 
 .route-info{
     color:#444;
-    font-size:13px;
-    line-height:1.7;
 }
 
 #steps{
@@ -132,7 +138,6 @@ body{
     gap:10px;
     padding:11px 15px;
     border-bottom:1px solid #eee;
-    background:#fff;
 }
 
 .step-icon{
@@ -170,8 +175,8 @@ body{
 
 .marker-icon svg{
     display:block;
-    width:38px;
-    height:48px;
+    width:40px;
+    height:50px;
 }
 
 .map-controls{
@@ -220,18 +225,13 @@ body{
         top:0;
         left:0;
         width:100%;
-        max-height:none;
         background:transparent;
         box-shadow:none;
         pointer-events:none;
     }
 
-    #inputs{
-        position:absolute;
-        top:10px;
-        left:10px;
-        right:10px;
-        max-height:250px;
+    #status{
+        margin:10px;
         padding:12px;
         background:#fff;
         box-shadow:0 2px 14px rgba(0,0,0,.25);
@@ -239,26 +239,23 @@ body{
     }
 
     .title{
-        margin-bottom:9px;
         font-size:16px;
     }
 
-    .point{
-        margin-bottom:6px;
+    .description{
+        font-size:12px;
     }
 
-    .point-icon{
-        width:22px;
-        height:22px;
+    .point-status{
+        margin-top:9px;
     }
 
-    .point input{
-        height:37px;
-        font-size:13px;
+    .buttons{
+        margin-top:10px;
     }
 
-    #routeButton{
-        height:41px;
+    .action-button{
+        height:39px;
     }
 
     #result{
@@ -267,9 +264,10 @@ body{
         bottom:0;
         left:0;
         z-index:1100;
-        min-height:92px;
+        min-height:90px;
         padding:12px 65px 12px 15px;
         padding-bottom:calc(12px + env(safe-area-inset-bottom));
+        background:#fff;
         box-shadow:0 -2px 14px rgba(0,0,0,.22);
         pointer-events:auto;
     }
@@ -281,11 +279,10 @@ body{
         left:0;
         z-index:1050;
         max-height:65vh;
-        padding-top:30px;
         padding-bottom:100px;
         background:#fff;
         box-shadow:0 -3px 18px rgba(0,0,0,.25);
-        transform:translateY(calc(100% - 92px));
+        transform:translateY(calc(100% - 90px));
         transition:transform .25s ease;
         pointer-events:auto;
     }
@@ -301,7 +298,7 @@ body{
         left:0;
         z-index:1060;
         display:block;
-        height:92px;
+        height:90px;
         background:#fff;
         pointer-events:none;
     }
@@ -318,7 +315,7 @@ body{
 
     #stepToggle{
         position:absolute;
-        top:25px;
+        top:24px;
         right:14px;
         display:flex;
         align-items:center;
@@ -337,7 +334,7 @@ body{
     }
 
     .map-controls{
-        top:275px;
+        top:265px;
         right:10px;
     }
 }
@@ -388,86 +385,62 @@ body{
 
 <div id="panel">
 
-    <div id="inputs">
+    <div id="status">
 
         <div class="title">
-            中国道路导航
+            点击地图设置导航
         </div>
 
-        <div class="point">
-            <svg class="point-icon" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="9" fill="#16803c"/>
-                <circle cx="12" cy="12" r="3" fill="#fff"/>
-            </svg>
-            <input id="p0" value="116.3975,39.9087">
+        <div class="description" id="description">
+            第一次点击地图设置起点，第二次点击地图设置目的地。
         </div>
 
-        <div class="point">
-            <svg class="point-icon" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="9" fill="#1976d2"/>
-                <text x="12" y="16"
-                    text-anchor="middle"
-                    fill="#fff"
-                    font-size="11"
-                    font-weight="bold">1</text>
-            </svg>
-            <input id="p1" value="116.3967,39.9250">
+        <div class="point-status">
+
+            <span
+                id="startDot"
+                class="status-dot">
+            </span>
+
+            <span id="startText">
+                起点：未选择
+            </span>
+
         </div>
 
-        <div class="point">
-            <svg class="point-icon" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="9" fill="#1976d2"/>
-                <text x="12" y="16"
-                    text-anchor="middle"
-                    fill="#fff"
-                    font-size="11"
-                    font-weight="bold">2</text>
-            </svg>
-            <input id="p2" value="116.3907,39.9470">
+        <div class="point-status">
+
+            <span
+                id="endDot"
+                class="status-dot">
+            </span>
+
+            <span id="endText">
+                目的地：未选择
+            </span>
+
         </div>
 
-        <div class="point">
-            <svg class="point-icon" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="9" fill="#1976d2"/>
-                <text x="12" y="16"
-                    text-anchor="middle"
-                    fill="#fff"
-                    font-size="11"
-                    font-weight="bold">3</text>
-            </svg>
-            <input id="p3" value="116.3910,39.9477">
-        </div>
+        <div class="buttons">
 
-        <div class="point">
-            <svg class="point-icon" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="9" fill="#1976d2"/>
-                <text x="12" y="16"
-                    text-anchor="middle"
-                    fill="#fff"
-                    font-size="11"
-                    font-weight="bold">4</text>
-            </svg>
-            <input id="p4" value="116.3965,39.9929">
-        </div>
+            <button
+                class="action-button"
+                id="resetButton">
+                重新选择
+            </button>
 
-        <div class="point">
-            <svg class="point-icon" viewBox="0 0 24 24">
-                <path
-                    d="M12 2C7.6 2 4 5.5 4 9.8c0 5.7 8 12.2 8 12.2s8-6.5 8-12.2C20 5.5 16.4 2 12 2z"
-                    fill="#d52b1e"/>
-                <circle cx="12" cy="10" r="3" fill="#fff"/>
-            </svg>
-            <input id="p5" value="116.3968,39.9924">
-        </div>
+            <button
+                class="action-button"
+                id="routeButton">
+                开始导航
+            </button>
 
-        <button id="routeButton">
-            开始道路导航
-        </button>
+        </div>
 
     </div>
 
     <div id="result">
-        正在计算道路导航
+        等待选择起点和目的地
     </div>
 
     <div id="steps"></div>
@@ -498,192 +471,178 @@ body{
 
 <script>
 
-document.addEventListener("DOMContentLoaded",function(){
+document.addEventListener(
+    "DOMContentLoaded",
+    function(){
 
-    /*
-     * Yandex 使用 WGS84 椭球墨卡托。
-     * Leaflet 的 EPSG:3395 正好对应 WGS84 / World Mercator。
-     */
-    var map=L.map("map",{
-        crs:L.CRS.EPSG3395,
-        center:[39.9087,116.3975],
-        zoom:13,
-        zoomControl:false,
-        attributionControl:false
-    });
-
-    /*
-     * Yandex 旧版瓦片接口。
-     */
-    L.tileLayer(
-        "https://core-renderer-tiles.maps.yandex.net/tiles?l=map&x={x}&y={y}&z={z}&scale=1&lang=zh_CN",
-        {
-            tileSize:256,
-            maxZoom:19,
-            noWrap:true
-        }
-    ).addTo(map);
-
-    var points=[
-        [39.9087,116.3975],
-        [39.9250,116.3967],
-        [39.9470,116.3907],
-        [39.9477,116.3910],
-        [39.9929,116.3965],
-        [39.9924,116.3968]
-    ];
-
-    var markers=[];
-    var routeLayer=null;
-
-    function createMarkerIcon(
-        type,
-        number
-    ){
-
-        var color;
-
-        if(type==="start"){
-            color="#16803c";
-        }
-        else if(type==="end"){
-            color="#d52b1e";
-        }
-        else{
-            color="#1976d2";
-        }
-
-        var content=
-            type==="waypoint"
-            ?
-            '<text x="19" y="21" text-anchor="middle" fill="#1976d2" font-size="10" font-weight="bold">'+
-            number+
-            '</text>'
-            :
-            '<circle cx="19" cy="17" r="3" fill="'+
-            color+
-            '"/>';
-
-        return L.divIcon({
-            className:"marker-icon",
-            html:
-                '<svg viewBox="0 0 38 48">'+
-                '<path d="M19 1C9 1 2 8 2 17c0 12 17 30 17 30s17-18 17-30C36 8 29 1 19 1z" fill="'+
-                color+
-                '"/>'+
-                '<circle cx="19" cy="17" r="8" fill="#fff"/>'+
-                content+
-                '</svg>',
-            iconSize:[38,48],
-            iconAnchor:[19,47]
-        });
-    }
-
-    function updateMarkers(){
-
-        for(
-            var i=0;
-            i<markers.length;
-            i++
-        ){
-
-            map.removeLayer(
-                markers[i]
-            );
-        }
-
-        markers=[];
-
-        for(
-            var j=0;
-            j<points.length;
-            j++
-        ){
-
-            var type;
-
-            if(j===0){
-                type="start";
+        var map=L.map(
+            "map",
+            {
+                crs:L.CRS.EPSG3395,
+                center:[
+                    39.9087,
+                    116.3975
+                ],
+                zoom:13,
+                zoomControl:false,
+                attributionControl:false
             }
-            else if(
-                j===points.length-1
-            ){
-                type="end";
+        );
+
+        L.tileLayer(
+            "https://core-renderer-tiles.maps.yandex.net/tiles?l=map&x={x}&y={y}&z={z}&scale=1&lang=zh_CN",
+            {
+                tileSize:256,
+                maxZoom:19,
+                noWrap:true
+            }
+        ).addTo(map);
+
+        var startPoint=null;
+        var endPoint=null;
+
+        var startMarker=null;
+        var endMarker=null;
+
+        var routeLayer=null;
+
+        var snappedStart=null;
+        var snappedEnd=null;
+
+        var selecting=true;
+
+        function createMarkerIcon(
+            type
+        ){
+
+            var color=
+                type==="start"
+                ?
+                "#16803c"
+                :
+                "#d52b1e";
+
+            return L.divIcon({
+                className:
+                    "marker-icon",
+
+                html:
+                    '<svg viewBox="0 0 40 50">'+
+                    '<path d="M20 1C9.5 1 2 8.5 2 18c0 12.5 18 31 18 31s18-18.5 18-31C38 8.5 30.5 1 20 1z" fill="'+
+                    color+
+                    '"/>'+
+                    '<circle cx="20" cy="18" r="9" fill="#fff"/>'+
+                    '<circle cx="20" cy="18" r="4" fill="'+
+                    color+
+                    '"/>'+
+                    '</svg>',
+
+                iconSize:[
+                    40,
+                    50
+                ],
+
+                iconAnchor:[
+                    20,
+                    49
+                ]
+            });
+        }
+
+        function updateStatus(){
+
+            var startText=
+                document.getElementById(
+                    "startText"
+                );
+
+            var endText=
+                document.getElementById(
+                    "endText"
+                );
+
+            var startDot=
+                document.getElementById(
+                    "startDot"
+                );
+
+            var endDot=
+                document.getElementById(
+                    "endDot"
+                );
+
+            if(startPoint){
+
+                startText.textContent=
+                    "起点："+
+                    startPoint[1]
+                        .toFixed(6)+
+                    ","+
+                    startPoint[0]
+                        .toFixed(6);
+
+                startDot.className=
+                    "status-dot start";
             }
             else{
-                type="waypoint";
+
+                startText.textContent=
+                    "起点：未选择";
+
+                startDot.className=
+                    "status-dot";
             }
 
-            var marker=
-                L.marker(
-                    points[j],
-                    {
-                        icon:createMarkerIcon(
-                            type,
-                            j
-                        )
-                    }
-                ).addTo(map);
+            if(endPoint){
 
-            markers.push(marker);
+                endText.textContent=
+                    "目的地："+
+                    endPoint[1]
+                        .toFixed(6)+
+                    ","+
+                    endPoint[0]
+                        .toFixed(6);
+
+                endDot.className=
+                    "status-dot end";
+            }
+            else{
+
+                endText.textContent=
+                    "目的地：未选择";
+
+                endDot.className=
+                    "status-dot";
+            }
         }
-    }
 
-    function readPoints(){
+        function resetSelection(){
 
-        for(
-            var i=0;
-            i<points.length;
-            i++
-        ){
+            startPoint=null;
+            endPoint=null;
 
-            var input=
-                document.getElementById(
-                    "p"+i
+            snappedStart=null;
+            snappedEnd=null;
+
+            selecting=true;
+
+            if(startMarker){
+
+                map.removeLayer(
+                    startMarker
                 );
 
-            var parts=
-                input.value
-                .trim()
-                .split(",");
-
-            if(parts.length!==2){
-
-                throw new Error(
-                    "第 "+(i+1)+" 个坐标格式错误"
-                );
+                startMarker=null;
             }
 
-            var lon=
-                Number(parts[0]);
+            if(endMarker){
 
-            var lat=
-                Number(parts[1]);
-
-            if(
-                !Number.isFinite(lon) ||
-                !Number.isFinite(lat)
-            ){
-
-                throw new Error(
-                    "第 "+(i+1)+" 个坐标无效"
+                map.removeLayer(
+                    endMarker
                 );
+
+                endMarker=null;
             }
-
-            points[i]=[
-                lat,
-                lon
-            ];
-        }
-    }
-
-    function buildRoute(){
-
-        try{
-
-            readPoints();
-
-            updateMarkers();
 
             if(routeLayer){
 
@@ -694,483 +653,782 @@ document.addEventListener("DOMContentLoaded",function(){
                 routeLayer=null;
             }
 
-            var coords="";
-
-            for(
-                var i=0;
-                i<points.length;
-                i++
-            ){
-
-                if(i){
-                    coords+=";";
-                }
-
-                /*
-                 * OSRM 使用 WGS84：
-                 * longitude,latitude
-                 */
-                coords+=
-                    points[i][1]+
-                    ","+
-                    points[i][0];
-            }
+            document.getElementById(
+                "description"
+            ).textContent=
+                "第一次点击地图设置起点，第二次点击地图设置目的地。";
 
             document.getElementById(
                 "result"
-            ).innerHTML=
-                "正在计算道路路线...";
+            ).textContent=
+                "等待选择起点和目的地";
 
-            var url=
-                "https://router.project-osrm.org/route/v1/driving/"+
-                coords+
-                "?overview=full"+
-                "&geometries=geojson"+
-                "&steps=true";
+            document.getElementById(
+                "steps"
+            ).innerHTML="";
 
-            fetch(url)
+            updateStatus();
+        }
 
-            .then(function(response){
+        function selectPoint(
+            latlng
+        ){
 
-                if(!response.ok){
+            if(!selecting){
+                return;
+            }
 
-                    throw new Error(
-                        "OSRM HTTP "+
-                        response.status
-                    );
-                }
+            var point=[
+                latlng.lat,
+                latlng.lng
+            ];
 
-                return response.json();
-            })
+            if(!startPoint){
 
-            .then(function(data){
+                startPoint=point;
 
-                if(
-                    data.code!=="Ok" ||
-                    !data.routes ||
-                    !data.routes.length
-                ){
-
-                    throw new Error(
-                        "没有找到道路路线"
-                    );
-                }
-
-                var route=
-                    data.routes[0];
-
-                /*
-                 * 注意：
-                 *
-                 * OSRM 返回 WGS84 经纬度。
-                 *
-                 * 不进行 GCJ02 偏移。
-                 *
-                 * Leaflet EPSG:3395 会把
-                 * WGS84 经纬度正确投影到
-                 * Yandex 的椭球墨卡托。
-                 */
-                routeLayer=
-                    L.geoJSON(
-                        route.geometry,
+                startMarker=
+                    L.marker(
+                        point,
                         {
-                            style:{
-                                color:"#1976d2",
-                                weight:7,
-                                opacity:.92
-                            }
+                            icon:
+                                createMarkerIcon(
+                                    "start"
+                                )
                         }
                     ).addTo(map);
 
-                fitRoute();
-
-                var distance=
-                    route.distance/1000;
-
-                var minutes=
-                    Math.round(
-                        route.duration/60
-                    );
-
-                var hours=
-                    Math.floor(
-                        minutes/60
-                    );
-
-                var remain=
-                    minutes%60;
-
-                var timeText;
-
-                if(hours){
-
-                    timeText=
-                        hours+
-                        " 小时 "+
-                        remain+
-                        " 分钟";
-
-                }
-                else{
-
-                    timeText=
-                        minutes+
-                        " 分钟";
-                }
-
-                document.getElementById(
-                    "result"
-                ).innerHTML=
-
-                    '<div class="route-title">'+
-                    '<svg class="route-icon" viewBox="0 0 24 24">'+
-                    '<path d="M5 17h14M7 17V9l2-3h6l2 3v8M8 9h8" fill="none" stroke="#1976d2" stroke-width="2"/>'+
-                    '<circle cx="8" cy="18" r="2" fill="#1976d2"/>'+
-                    '<circle cx="16" cy="18" r="2" fill="#1976d2"/>'+
-                    '</svg>'+
-                    '道路导航'+
-                    '</div>'+
-                    '<div class="route-info">'+
-                    '途经点：'+
-                    (points.length-2)+
-                    ' 个<br>'+
-                    '总距离：'+
-                    distance.toFixed(2)+
-                    ' km<br>'+
-                    '预计时间：'+
-                    timeText+
-                    '</div>';
-
-                showSteps(route);
-            })
-
-            .catch(function(error){
-
-                console.error(
-                    "ROUTE ERROR",
-                    error
+                startMarker.bindPopup(
+                    "起点"
                 );
 
                 document.getElementById(
-                    "result"
-                ).innerHTML=
-                    "路线规划失败：<br>"+
-                    error.message;
-            });
+                    "description"
+                ).textContent=
+                    "起点已经选择，请点击地图选择目的地。";
 
+                updateStatus();
+
+                return;
+            }
+
+            if(!endPoint){
+
+                endPoint=point;
+
+                endMarker=
+                    L.marker(
+                        point,
+                        {
+                            icon:
+                                createMarkerIcon(
+                                    "end"
+                                )
+                        }
+                    ).addTo(map);
+
+                endMarker.bindPopup(
+                    "目的地"
+                );
+
+                selecting=false;
+
+                document.getElementById(
+                    "description"
+                ).textContent=
+                    "起点和目的地已经选择，正在寻找最近道路。";
+
+                updateStatus();
+
+                snapAndRoute();
+            }
         }
-        catch(error){
+
+        function nearestRoad(
+            point
+        ){
+
+            var url=
+                "https://router.project-osrm.org/nearest/v1/driving/"+
+                point[1]+
+                ","+
+                point[0]+
+                "?number=1";
+
+            return fetch(url)
+                .then(
+                    function(response){
+
+                        if(!response.ok){
+
+                            throw new Error(
+                                "最近道路查询 HTTP "+
+                                response.status
+                            );
+                        }
+
+                        return response.json();
+                    }
+                )
+                .then(
+                    function(data){
+
+                        if(
+                            data.code!=="Ok" ||
+                            !data.waypoints ||
+                            !data.waypoints.length
+                        ){
+
+                            throw new Error(
+                                "附近没有可导航道路"
+                            );
+                        }
+
+                        var waypoint=
+                            data.waypoints[0];
+
+                        return {
+                            point:[
+                                waypoint.location[1],
+                                waypoint.location[0]
+                            ],
+                            distance:
+                                waypoint.distance
+                        };
+                    }
+                );
+        }
+
+        function snapAndRoute(){
 
             document.getElementById(
                 "result"
             ).innerHTML=
-                "坐标错误：<br>"+
-                error.message;
-        }
-    }
+                "正在寻找起点和目的地附近的道路...";
 
-    function fitRoute(){
+            Promise.all([
+                nearestRoad(startPoint),
+                nearestRoad(endPoint)
+            ])
+            .then(
+                function(result){
 
-        if(!routeLayer){
-            return;
-        }
+                    snappedStart=
+                        result[0];
 
-        var bounds=
-            routeLayer.getBounds();
+                    snappedEnd=
+                        result[1];
 
-        if(!bounds.isValid()){
-            return;
-        }
+                    if(startMarker){
 
-        if(window.innerWidth<=700){
-
-            map.fitBounds(
-                bounds,
-                {
-                    paddingTopLeft:[25,285],
-                    paddingBottomRight:[25,165]
-                }
-            );
-
-        }
-        else{
-
-            map.fitBounds(
-                bounds,
-                {
-                    paddingTopLeft:[390,25],
-                    paddingBottomRight:[25,25]
-                }
-            );
-        }
-    }
-
-    function showSteps(route){
-
-        var container=
-            document.getElementById(
-                "steps"
-            );
-
-        container.innerHTML="";
-
-        var number=1;
-
-        route.legs.forEach(
-            function(leg){
-
-                leg.steps.forEach(
-                    function(step){
-
-                        var maneuver=
-                            step.maneuver||{};
-
-                        var name=
-                            step.name||
-                            "当前道路";
-
-                        var div=
-                            document.createElement(
-                                "div"
-                            );
-
-                        div.className="step";
-
-                        div.innerHTML=
-                            '<div class="step-icon">'+
-                            getStepIcon(
-                                maneuver.type,
-                                maneuver.modifier
-                            )+
-                            '</div>'+
-                            '<div class="step-content">'+
-                            '<div class="step-name">'+
-                            number+
-                            ". "+
-                            getInstruction(
-                                maneuver,
-                                name
-                            )+
-                            '</div>'+
-                            '<div class="step-distance">'+
-                            formatDistance(
-                                step.distance||0
-                            )+
-                            '</div>'+
-                            '</div>';
-
-                        container.appendChild(
-                            div
+                        startMarker.setLatLng(
+                            snappedStart.point
                         );
+                    }
 
-                        number++;
+                    if(endMarker){
+
+                        endMarker.setLatLng(
+                            snappedEnd.point
+                        );
+                    }
+
+                    document.getElementById(
+                        "description"
+                    ).textContent=
+                        "已经吸附到最近道路，正在计算实际道路路线。";
+
+                    requestRoute();
+                }
+            )
+            .catch(
+                function(error){
+
+                    console.error(
+                        error
+                    );
+
+                    document.getElementById(
+                        "result"
+                    ).innerHTML=
+                        "寻找道路失败：<br>"+
+                        error.message;
+
+                    selecting=true;
+                }
+            );
+        }
+
+        function requestRoute(){
+
+            var start=
+                snappedStart.point;
+
+            var end=
+                snappedEnd.point;
+
+            var coordinates=
+                start[1]+
+                ","+
+                start[0]+
+                ";"+
+                end[1]+
+                ","+
+                end[0];
+
+            var url=
+                "https://router.project-osrm.org/route/v1/driving/"+
+                coordinates+
+                "?overview=full"+
+                "&geometries=geojson"+
+                "&steps=true"+
+                "&alternatives=true";
+
+            document.getElementById(
+                "result"
+            ).innerHTML=
+                "正在计算道路导航路线...";
+
+            fetch(url)
+            .then(
+                function(response){
+
+                    if(!response.ok){
+
+                        throw new Error(
+                            "路线服务器 HTTP "+
+                            response.status
+                        );
+                    }
+
+                    return response.json();
+                }
+            )
+            .then(
+                function(data){
+
+                    if(
+                        data.code!=="Ok" ||
+                        !data.routes ||
+                        !data.routes.length
+                    ){
+
+                        throw new Error(
+                            "两个道路点之间没有可用路线"
+                        );
+                    }
+
+                    drawRoute(
+                        data.routes[0]
+                    );
+                }
+            )
+            .catch(
+                function(error){
+
+                    console.error(
+                        error
+                    );
+
+                    document.getElementById(
+                        "result"
+                    ).innerHTML=
+                        "道路导航失败：<br>"+
+                        error.message;
+
+                    selecting=true;
+                }
+            );
+        }
+
+        function drawRoute(
+            route
+        ){
+
+            if(routeLayer){
+
+                map.removeLayer(
+                    routeLayer
+                );
+            }
+
+            routeLayer=
+                L.geoJSON(
+                    route.geometry,
+                    {
+                        style:{
+                            color:"#1976d2",
+                            weight:7,
+                            opacity:.92
+                        }
+                    }
+                ).addTo(map);
+
+            fitRoute();
+
+            var distance=
+                route.distance/1000;
+
+            var minutes=
+                Math.round(
+                    route.duration/60
+                );
+
+            var hours=
+                Math.floor(
+                    minutes/60
+                );
+
+            var remain=
+                minutes%60;
+
+            var timeText;
+
+            if(hours){
+
+                timeText=
+                    hours+
+                    " 小时 "+
+                    remain+
+                    " 分钟";
+
+            }
+            else{
+
+                timeText=
+                    minutes+
+                    " 分钟";
+            }
+
+            var startSnapDistance=
+                snappedStart.distance;
+
+            var endSnapDistance=
+                snappedEnd.distance;
+
+            document.getElementById(
+                "result"
+            ).innerHTML=
+
+                '<div class="route-title">'+
+
+                '<svg class="route-icon" viewBox="0 0 24 24">'+
+                '<path d="M5 17h14M7 17V9l2-3h6l2 3v8M8 9h8" fill="none" stroke="#1976d2" stroke-width="2"/>'+
+                '<circle cx="8" cy="18" r="2" fill="#1976d2"/>'+
+                '<circle cx="16" cy="18" r="2" fill="#1976d2"/>'+
+                '</svg>'+
+
+                '道路导航'+
+
+                '</div>'+
+
+                '<div class="route-info">'+
+
+                '起点吸附：'+
+                formatDistance(
+                    startSnapDistance
+                )+
+                '<br>'+
+
+                '目的地吸附：'+
+                formatDistance(
+                    endSnapDistance
+                )+
+                '<br>'+
+
+                '道路距离：'+
+                distance.toFixed(2)+
+                ' km<br>'+
+
+                '预计时间：'+
+                timeText+
+
+                '</div>';
+
+            showSteps(
+                route
+            );
+        }
+
+        function fitRoute(){
+
+            if(!routeLayer){
+                return;
+            }
+
+            var bounds=
+                routeLayer.getBounds();
+
+            if(!bounds.isValid()){
+                return;
+            }
+
+            if(window.innerWidth<=700){
+
+                map.fitBounds(
+                    bounds,
+                    {
+                        paddingTopLeft:[
+                            25,
+                            280
+                        ],
+                        paddingBottomRight:[
+                            25,
+                            160
+                        ]
+                    }
+                );
+
+            }
+            else{
+
+                map.fitBounds(
+                    bounds,
+                    {
+                        paddingTopLeft:[
+                            380,
+                            25
+                        ],
+                        paddingBottomRight:[
+                            25,
+                            25
+                        ]
                     }
                 );
             }
-        );
-    }
-
-    function getInstruction(
-        maneuver,
-        road
-    ){
-
-        var type=
-            maneuver.type||"";
-
-        var modifier=
-            maneuver.modifier||"";
-
-        if(type==="depart"){
-            return "从起点出发，进入 "+road;
         }
 
-        if(type==="arrive"){
-            return "到达目的地";
-        }
-
-        if(type==="turn"){
-
-            if(modifier==="left"){
-                return "左转进入 "+road;
-            }
-
-            if(modifier==="right"){
-                return "右转进入 "+road;
-            }
-
-            if(modifier==="slight left"){
-                return "向左前方行驶进入 "+road;
-            }
-
-            if(modifier==="slight right"){
-                return "向右前方行驶进入 "+road;
-            }
-
-            return "转入 "+road;
-        }
-
-        if(type==="merge"){
-            return "并入 "+road;
-        }
-
-        if(type==="on ramp"){
-            return "驶入 "+road+" 匝道";
-        }
-
-        if(type==="off ramp"){
-            return "驶出 "+road+" 匝道";
-        }
-
-        if(
-            type==="roundabout"||
-            type==="rotary"
+        function showSteps(
+            route
         ){
 
-            if(maneuver.exit){
-
-                return "进入环岛，在第 "+
-                    maneuver.exit+
-                    " 个出口驶出";
-            }
-
-            return "进入环岛";
-        }
-
-        return "继续沿 "+road+" 行驶";
-    }
-
-    function getStepIcon(
-        type,
-        modifier
-    ){
-
-        var d;
-
-        if(type==="depart"){
-
-            d=
-                "M12 20V4m0 0-6 6m6-6 6 6";
-        }
-
-        else if(type==="arrive"){
-
-            d=
-                "M12 4v16m0 0-6-6m6 6 6-6";
-        }
-
-        else if(modifier==="left"){
-
-            d=
-                "M19 18H9a5 5 0 0 1-5-5V7m0 0 4 4M4 7l-4 4";
-        }
-
-        else if(modifier==="right"){
-
-            d=
-                "M5 18h10a5 5 0 0 0 5-5V7m0 0-4 4m4-4 4 4";
-        }
-
-        else{
-
-            d=
-                "M12 20V4m0 0-6 6m6-6 6 6";
-        }
-
-        return `
-        <svg viewBox="0 0 24 24">
-            <path
-                d="${d}"
-                fill="none"
-                stroke="#1976d2"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"/>
-        </svg>`;
-    }
-
-    function formatDistance(distance){
-
-        if(distance<1000){
-
-            return Math.round(
-                distance
-            )+" 米";
-        }
-
-        return (
-            distance/1000
-        ).toFixed(1)+" 公里";
-    }
-
-    document
-        .getElementById("routeButton")
-        .addEventListener(
-            "click",
-            buildRoute
-        );
-
-    document
-        .getElementById("zoomIn")
-        .addEventListener(
-            "click",
-            function(){
-                map.zoomIn();
-            }
-        );
-
-    document
-        .getElementById("zoomOut")
-        .addEventListener(
-            "click",
-            function(){
-                map.zoomOut();
-            }
-        );
-
-    document
-        .getElementById("fitRoute")
-        .addEventListener(
-            "click",
-            fitRoute
-        );
-
-    document
-        .getElementById("stepToggle")
-        .addEventListener(
-            "click",
-            function(){
-
-                var steps=
-                    document.getElementById(
-                        "steps"
-                    );
-
-                steps.classList.toggle(
-                    "open"
+            var container=
+                document.getElementById(
+                    "steps"
                 );
 
-                var button=
-                    document.getElementById(
-                        "stepToggle"
-                    );
+            container.innerHTML="";
 
-                button.innerHTML=
-                    steps.classList.contains(
-                        "open"
-                    )
-                    ?
-                    '<svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-                    :
-                    '<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            var number=1;
+
+            route.legs.forEach(
+                function(leg){
+
+                    leg.steps.forEach(
+                        function(step){
+
+                            var maneuver=
+                                step.maneuver||{};
+
+                            var div=
+                                document.createElement(
+                                    "div"
+                                );
+
+                            div.className=
+                                "step";
+
+                            div.innerHTML=
+
+                                '<div class="step-icon">'+
+                                getStepIcon(
+                                    maneuver.type,
+                                    maneuver.modifier
+                                )+
+                                '</div>'+
+
+                                '<div class="step-content">'+
+
+                                '<div class="step-name">'+
+                                number+
+                                ". "+
+                                getInstruction(
+                                    maneuver,
+                                    step.name
+                                )+
+                                '</div>'+
+
+                                '<div class="step-distance">'+
+                                formatDistance(
+                                    step.distance||0
+                                )+
+                                '</div>'+
+
+                                '</div>';
+
+                            container.appendChild(
+                                div
+                            );
+
+                            number++;
+                        }
+                    );
+                }
+            );
+        }
+
+        function getInstruction(
+            maneuver,
+            road
+        ){
+
+            var type=
+                maneuver.type||"";
+
+            var modifier=
+                maneuver.modifier||"";
+
+            road=
+                road||
+                "当前道路";
+
+            if(type==="depart"){
+                return "从道路起点出发，进入 "+road;
+            }
+
+            if(type==="arrive"){
+                return "到达目的地";
+            }
+
+            if(type==="turn"){
+
+                if(modifier==="left"){
+                    return "左转进入 "+road;
+                }
+
+                if(modifier==="right"){
+                    return "右转进入 "+road;
+                }
+
+                if(modifier==="slight left"){
+                    return "向左前方行驶进入 "+road;
+                }
+
+                if(modifier==="slight right"){
+                    return "向右前方行驶进入 "+road;
+                }
+
+                return "转入 "+road;
+            }
+
+            if(type==="merge"){
+                return "并入 "+road;
+            }
+
+            if(type==="on ramp"){
+                return "驶入 "+road+" 匝道";
+            }
+
+            if(type==="off ramp"){
+                return "驶出 "+road+" 匝道";
+            }
+
+            if(
+                type==="roundabout"||
+                type==="rotary"
+            ){
+
+                if(maneuver.exit){
+
+                    return "进入环岛，在第 "+
+                        maneuver.exit+
+                        " 个出口驶出";
+                }
+
+                return "进入环岛";
+            }
+
+            return "继续沿 "+road+" 行驶";
+        }
+
+        function getStepIcon(
+            type,
+            modifier
+        ){
+
+            var d;
+
+            if(type==="depart"){
+
+                d=
+                    "M12 20V4m0 0-6 6m6-6 6 6";
+            }
+            else if(type==="arrive"){
+
+                d=
+                    "M12 4v16m0 0-6-6m6 6 6-6";
+            }
+            else if(modifier==="left"){
+
+                d=
+                    "M19 18H9a5 5 0 0 1-5-5V7m0 0 4 4M4 7l-4 4";
+            }
+            else if(modifier==="right"){
+
+                d=
+                    "M5 18h10a5 5 0 0 0 5-5V7m0 0-4 4m4-4 4 4";
+            }
+            else{
+
+                d=
+                    "M12 20V4m0 0-6 6m6-6 6 6";
+            }
+
+            return `
+            <svg viewBox="0 0 24 24">
+                <path
+                    d="${d}"
+                    fill="none"
+                    stroke="#1976d2"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"/>
+            </svg>`;
+        }
+
+        function formatDistance(
+            distance
+        ){
+
+            if(distance<1000){
+
+                return Math.round(
+                    distance
+                )+
+                " 米";
+            }
+
+            return (
+                distance/1000
+            ).toFixed(1)+
+            " 公里";
+        }
+
+        map.on(
+            "click",
+            function(event){
+
+                selectPoint(
+                    event.latlng
+                );
             }
         );
 
-    updateMarkers();
+        document
+            .getElementById(
+                "resetButton"
+            )
+            .addEventListener(
+                "click",
+                resetSelection
+            );
 
-    buildRoute();
+        document
+            .getElementById(
+                "routeButton"
+            )
+            .addEventListener(
+                "click",
+                function(){
 
-});
+                    if(
+                        startPoint &&
+                        endPoint
+                    ){
+
+                        snapAndRoute();
+                    }
+                    else{
+
+                        document.getElementById(
+                            "result"
+                        ).textContent=
+                            "请先点击地图选择起点和目的地。";
+                    }
+                }
+            );
+
+        document
+            .getElementById(
+                "zoomIn"
+            )
+            .addEventListener(
+                "click",
+                function(){
+
+                    map.zoomIn();
+                }
+            );
+
+        document
+            .getElementById(
+                "zoomOut"
+            )
+            .addEventListener(
+                "click",
+                function(){
+
+                    map.zoomOut();
+                }
+            );
+
+        document
+            .getElementById(
+                "fitRoute"
+            )
+            .addEventListener(
+                "click",
+                fitRoute
+            );
+
+        document
+            .getElementById(
+                "stepToggle"
+            )
+            .addEventListener(
+                "click",
+                function(){
+
+                    var steps=
+                        document.getElementById(
+                            "steps"
+                        );
+
+                    steps.classList.toggle(
+                        "open"
+                    );
+
+                    var button=
+                        document.getElementById(
+                            "stepToggle"
+                        );
+
+                    if(
+                        steps.classList.contains(
+                            "open"
+                        )
+                    ){
+
+                        button.innerHTML=
+                            '<svg viewBox="0 0 24 24">'+
+                            '<path d="M6 15l6-6 6 6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'+
+                            '</svg>';
+
+                    }
+                    else{
+
+                        button.innerHTML=
+                            '<svg viewBox="0 0 24 24">'+
+                            '<path d="M6 9l6 6 6-6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'+
+                            '</svg>';
+                    }
+                }
+            );
+
+        updateStatus();
+
+    }
+);
 </script>
 
 </body>
